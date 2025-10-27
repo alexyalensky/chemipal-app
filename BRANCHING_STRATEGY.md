@@ -2,7 +2,17 @@
 
 ## Overview
 
-This document defines the branching strategy and workflow for managing the ChemiPal Integration System project.
+This document defines the **issue-driven branching workflow** for managing the ChemiPal Integration System project.
+
+## Our Workflow
+
+**The Procedure:**
+1. Create an Issue on GitHub
+2. Create a branch for the issue
+3. Develop the required code on this branch
+4. Merge to main when finished
+
+**Simple. Clean. Effective.**
 
 ---
 
