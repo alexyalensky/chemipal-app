@@ -9,7 +9,7 @@
            ↓
 3. Develop Code on Branch
            ↓
-4. Merge to main
+4. Merge to master
            ↓
 5. Close Issue
 ```
