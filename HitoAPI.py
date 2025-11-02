@@ -2,6 +2,9 @@ import time
 
 import requests
 from urllib import request
+from logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class HitoAPI:
@@ -16,6 +19,50 @@ class HitoAPI:
 
     def get_key(self):
         return self.key
+
+    def _make_request(self, method, url, **kwargs):
+        """
+        Internal method to make HTTP requests with logging and error handling.
+        
+        Args:
+            method: HTTP method (currently only 'POST' is used)
+            url: Full URL to request
+            **kwargs: Additional arguments passed to requests.post
+            
+        Returns:
+            Response object
+        """
+        # Extract useful logging information
+        body = kwargs.get('json', {})
+        entity_id = body.get('entityId') if isinstance(body, dict) else 'N/A'
+        record_count = len(body.get('records', [])) if isinstance(body, dict) and 'records' in body else 0
+        
+        # Log request
+        logger.debug(f'API Request: {method} {url} | Entity: {entity_id} | Records: {record_count}')
+        
+        try:
+            # Add timeout to all requests
+            kwargs['timeout'] = kwargs.get('timeout', 30)
+            
+            # Make request
+            response = requests.post(url, **kwargs)
+            
+            # Log successful response
+            duration = response.elapsed.total_seconds()
+            logger.debug(f'API Response: {response.status_code} | Duration: {duration:.2f}s | Entity: {entity_id}')
+            
+            # Raise for HTTP errors
+            response.raise_for_status()
+            
+            return response
+            
+        except requests.exceptions.Timeout as e:
+            logger.error(f'API Timeout: {method} {url} | Entity: {entity_id} | Duration: 30s+')
+            raise
+        except requests.exceptions.RequestException as e:
+            status_code = e.response.status_code if hasattr(e, 'response') and e.response else 'N/A'
+            logger.error(f'API Error: {method} {url} | Status: {status_code} | Entity: {entity_id}')
+            raise
 
     def get_users(self):
         url = self.domain + '/hito-rest/api/user'
@@ -41,8 +88,7 @@ class HitoAPI:
             "entityId": entity_num,
             "records": []
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         return response_entity.json()
 
     def get_specific_entity_records(self, entity_num, ids, params=[]):
@@ -90,8 +136,7 @@ class HitoAPI:
         body = {
             "entityId": entity_num
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         request.urlcleanup()
         response_entity.close()
         return response_entity.json()
@@ -158,8 +203,7 @@ class HitoAPI:
 
     def create_or_update_multi_records(self, body):
         url = self.domain + "/hito-rest/api/entity/records/create-or-update"
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
 
     def get_headers(self, entity_num):
         params = self.get_entity_params(entity_num)
@@ -184,8 +228,7 @@ class HitoAPI:
                 }
             ]
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         return response_entity.json()
 
     def get_records_by_search_criteria_and_params(self, entity_id: int, params: list, searchCriterias=[]):
@@ -195,8 +238,7 @@ class HitoAPI:
             "params": params,
             "searchCriterias": searchCriterias
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         return response_entity.json()
 
     def get_record_by_search_criterias(self, entity_id, searchCriterias):
@@ -214,5 +256,4 @@ class HitoAPI:
         body = {
             "users": users
         }
-        response = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response.raise_for_status()
+        response = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)

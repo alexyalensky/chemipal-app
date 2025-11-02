@@ -1,7 +1,10 @@
 from datetime import datetime
 import logging
+from logging_config import setup_logging, get_logger
 
-logging.basicConfig(filename="log/log.txt", level=logging.DEBUG)
+# Initialize centralized logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 class OrderNumbering:

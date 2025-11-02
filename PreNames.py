@@ -4,14 +4,11 @@ import os
 import logging
 from helpers import is_param_exists_in_entity
 from datetime import datetime
+from logging_config import setup_logging, get_logger
 
-# Logger configuration
-logging.basicConfig(
-    filename="log/log.txt", 
-    level=logging.INFO, 
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-    )
+# Initialize centralized logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 class PreNames:

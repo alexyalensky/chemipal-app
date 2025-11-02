@@ -1,6 +1,11 @@
 from datetime import datetime
 from HitoAPI import HitoAPI
 import logging
+from logging_config import setup_logging, get_logger
+
+# Initialize centralized logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 def check_for_new_users(customer_api: HitoAPI, entity_id: int, search_criteria: list[dict], params: list[int]) -> tuple[bool, list, list]:

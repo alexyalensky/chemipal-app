@@ -3,10 +3,11 @@ import logging
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from logging_config import setup_logging, get_logger
 
-
-# Logger configuration
-logging.basicConfig(filename="log/log.txt", level=logging.DEBUG)
+# Initialize centralized logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 class INVORD:

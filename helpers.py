@@ -1,5 +1,8 @@
 import logging
 from datetime import datetime
+from logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def remove_hyphens(phone_number):

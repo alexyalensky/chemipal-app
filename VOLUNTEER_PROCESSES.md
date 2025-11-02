@@ -8,6 +8,13 @@ The volunteer transfer system manages **automated volunteer data migration** acr
 
 ---
 
+ראשון:
+יישות 31 - מגיעים מטופס מקוון עם סטאטוס חדש
+יישות 187 - יישות של מתנדבים חד חד ערכיים
+בודקים אם קיים מתנדב ב 187 
+אם קיים - מעדכנים פרטים
+אם לא קיים - מקימים ומשנים סטאטוסים 
+
 ## Table of Contents
 
 1. [Business Context](#business-context)

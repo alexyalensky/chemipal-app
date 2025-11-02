@@ -1,9 +1,11 @@
 import logging
 from helpers import is_param_exists_in_entity, entity_param_2_entity_param
 from datetime import datetime
+from logging_config import setup_logging, get_logger
 
-# Logger configuration
-logging.basicConfig(filename="log/log.txt", level=logging.DEBUG)
+# Initialize centralized logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 class FitemFunctions:
