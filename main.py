@@ -1,8 +1,8 @@
 import os
 import time
 import threading
+import logging
 import random
-from datetime import datetime
 from dotenv import load_dotenv
 
 from HitoAPI import *
@@ -19,13 +19,11 @@ from check_volunteer_exists import *
 from PulseemAPI import *
 import requests
 from g1_functions import create_users_from_entity_rows
-from logging_config import setup_logging, get_logger
 
 load_dotenv()
 
-# Initialize centralized logging
-setup_logging()
-logger = get_logger(__name__)
+# Logger configuration
+logging.basicConfig(filename="log/log.txt", level=logging.DEBUG)
 
 chemipal = HitoAPI(os.environ.get("CHEMIPAL_DOMAIN"), os.environ.get("CHEMIPAL_API_KEY"))
 rlz = HitoAPI(os.environ.get("RLZ_DOMAIN"), os.environ.get("RLZ_API_KEY"))
@@ -38,14 +36,19 @@ g1 = HitoAPI(os.environ.get("G1_DOMAIN"), os.environ.get("G1_API_KEY"))
 
 def g1_processes():
     while True:
-        logger.info('START: g1_processes - every 1 minute')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize g1_processes() five5 every 1 minute '
+            f'-----------------!')
         create_users_from_entity_rows(g1, 34, [{"paramId": 989, "operator": "EQ", "values": [2]}], [574, 575, 627, 628, 570, 629, 580, 581, 582, 583, 584, 585, 822])
-        logger.info('END: g1_processes')
+        logging.info(f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize g1_processes() five5 every 1 minute '
+                     f'-----------------!')
         time.sleep(60)
 
 def ashdod_betihut():
     while True:
-        logger.info('START: ashdod_betihut - every 10 minutes')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize ashdod_betihut() seven7 every 10 minutes '
+            f'-----------------!')
         transfer_records(
             customer_name="Ashdod",
             api=ashdod,
@@ -67,13 +70,14 @@ def ashdod_betihut():
             param_ids_to_receive=[2184, 2185, 2186, 2190, 4297, 4296, 4146],
             program_status_param_id=4382, new_id_pos=0
         )
-        logger.info('END: ashdod_betihut')
         time.sleep(600)
 
 
 def namal_proccesses():
     while True:
-        logger.info('START: namal_proccesses - every 1 minute')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize namal_proccesses() zero0 every 1 minute '
+            f'-----------------!')
         transfer_records(
             customer_name="NAMAL", api=namal, origin_entity_id=105, dest_entity_id=62,
             search_criteria=[{"paramId": 1872, "operator": "EQ", "values": [1]}],
@@ -103,13 +107,14 @@ def namal_proccesses():
             block_param_pos=4,
             new_id_pos=0
         )
-        logger.info('END: namal_proccesses')
         time.sleep(60)
 
 
 def volunteer_processes():
     while True:
-        logger.info('START: volunteer_processes - every 1 hour')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize volunteer_processes() one1 every one hour '
+            f'-----------------!')
         transfer_volunteers(
             customer_name="RLZ",
             api=rlz,
@@ -139,19 +144,23 @@ def volunteer_processes():
             search_criteria=[{"paramId": 2687, "operator": "EQ", "values": [1]}],
             param_ids_to_transfer=[2248, 2246, 2247, 2493, 2495, 2249, 2250, 2251, 2269, 2253, 2252, 2254, 2255, 2256,
                                    2491, 2490,
-                                   2259, 2262, 2263, 2776, 2402, 3027, 2947, 2777],
+                                   2259, 2262, 2263, 2776, 2402, 3027, 2947, 2777, 2859 , 3692],
             param_ids_to_receive=[2688, 2358, 2359, 2389, 2395, 2361, 2362, 2363, 2364, 2366, 2365, 2367, 2368, 2369,
                                   2424, 2425,
-                                  2426, 2429, 2430, 2385, 2392, 3026, 3118, 2390],
+                                  2426, 2429, 2430, 2385, 2392, 3026, 3118, 2390, 2428, 3691],
             program_status_param_id=2687,
             update_origin_entity_with_tz_without_zero_param=2457)
-        logger.info('END: volunteer_processes')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize volunteer_processes() one1 every one hour'
+            f'-----------------!')
         time.sleep(3601)
 
 
 def delek_processes():
     while True:
-        logger.info('START: delek_processes - every 2 hours')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize delek_processes() two2 every two hours '
+            f'-----------------!')
         entity_2_users_delek(
             api=delek,
             entity_id=2,
@@ -160,13 +169,17 @@ def delek_processes():
             criteria_value_id_after_move_to_user=2,
             entity_params_to_transfer=[11, 12, 308, 25, 217, 147, 380, 317, 376]
         )
-        logger.info('END: delek_processes')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize delek_processes() two2 every two hours '
+            f'-----------------!')
         time.sleep(7202)
 
 
 def main_processes():
     while True:
-        logger.info('START: main_processes - every 7 minutes')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize main_processes() three3 every 7 minutes '
+            f'-----------------!')
         inv_file_import = PreNames("INV", 8, chemipal, os.environ.get("SOURCE_FOLDER"),
                                    os.environ.get("DESTINATION_FOLDER"))
         new_inv_files_imported = inv_file_import.creating_body_to_update_with_new_id_INV_FITEM()
@@ -538,13 +551,17 @@ def main_processes():
                 dest_param_id_to_recieve=698
             )
         del ord_order_numbering
-        logger.info('END: main_processes')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize main_processes() three3 every 7 minutes '
+            f'-----------------!')
         time.sleep(421)
 
 
 def thirty_min():
     while True:
-        logger.info('START: thirty_min')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize thirty_min() four4 '
+            f'-----------------!')
         spk_file_import = PreNames("SPK", 4, chemipal, os.environ.get("SOURCE_FOLDER"),
                                    os.environ.get("DESTINATION_FOLDER"))
         new_spk_files_imported = spk_file_import.creating_body_to_update()
@@ -577,23 +594,31 @@ def thirty_min():
                                    os.environ.get("DESTINATION_FOLDER"))
         ctr_file_import.creating_body_to_update()
         del ctr_file_import
-        logger.info('END: thirty_min')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize thirty_min() four4 '
+            f'-----------------!')
         time.sleep(1800)
 
 
 def one_hour():
     while True:
-        logger.info('START: one_hour')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize one_hour() five5 '
+            f'-----------------!')
         inv_file_export = INVORD(chemipal, 8)
         inv_file_export.start()
         del inv_file_export
-        logger.info('END: one_hour')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize one_hour() five5 '
+            f'-----------------!')
         time.sleep(3600)
 
 
 def fifteen_min():
     while True:
-        logger.info('START: fifteen_min')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize fifteen_min() six6 '
+            f'-----------------!')
         doc_file_import = PreNames("DOC", 19, chemipal, os.environ.get("SOURCE_FOLDER"),
                                    os.environ.get("DESTINATION_FOLDER"))
         new_doc_files_imported = doc_file_import.creating_body_to_update_with_new_id()
@@ -676,7 +701,9 @@ def fifteen_min():
         ord_file_export = INVORD(chemipal, 10)
         ord_file_export.start()
         del ord_file_export
-        logger.info('END: fifteen_min')
+        logging.info(
+            f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize fifteen_min() six6 '
+            f'-----------------!')
         time.sleep(901)
 
 
