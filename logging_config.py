@@ -19,10 +19,10 @@ def setup_logging():
     Safe to call multiple times - only initializes once.
     
     Configuration:
-    - Console: INFO and above
     - File (app.log): DEBUG and above, 50MB rotation
     - File (errors.log): ERROR and above, 10MB rotation
     - Suppresses noisy third-party logs
+    - No console output (designed for service operation)
     """
     global _logging_initialized
     
@@ -46,53 +46,38 @@ def setup_logging():
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     
-    # Console handler (INFO and above)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(detailed_formatter)
-    
-    # Rotating file handler for all logs
+    # Rotating file handler for all logs (UTF-8 encoding for Hebrew characters)
     file_handler = RotatingFileHandler(
         'log/app.log',
         maxBytes=50*1024*1024,  # 50MB
-        backupCount=10
+        backupCount=10,
+        encoding='utf-8'
     )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(detailed_formatter)
     
-    # Separate file for errors only
+    # Separate file for errors only (UTF-8 encoding for Hebrew characters)
     error_handler = RotatingFileHandler(
         'log/errors.log',
         maxBytes=10*1024*1024,  # 10MB
-        backupCount=5
+        backupCount=5,
+        encoding='utf-8'
     )
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(detailed_formatter)
     
-    # Add handlers
-    logger.addHandler(console_handler)
+    # Add handlers (no console handler - logs only to files for service operation)
     logger.addHandler(file_handler)
     logger.addHandler(error_handler)
+    
+    # Disable logging exceptions to prevent encoding errors from crashing
+    # This ensures Hebrew characters are written to UTF-8 files without console errors
+    logging.raiseExceptions = False
     
     # Suppress noisy third-party logs
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
     logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
-    
-    # Legacy log file for backward compatibility
-    legacy_handler = RotatingFileHandler(
-        'log/log.txt',
-        maxBytes=50*1024*1024,  # 50MB
-        backupCount=10
-    )
-    legacy_handler.setLevel(logging.DEBUG)
-    # Use simpler format for legacy compatibility
-    legacy_formatter = logging.Formatter(
-        '%(levelname)s:%(name)s:%(asctime)s | %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    legacy_handler.setFormatter(legacy_formatter)
-    logger.addHandler(legacy_handler)
     
     # Mark as initialized
     _logging_initialized = True

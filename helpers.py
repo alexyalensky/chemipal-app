@@ -1029,11 +1029,6 @@ def entity_2_users(api, entity_id, criteria_param_id, criteria_value, criteria_v
 def transfer_records_based_on_blocks(customer_name, api, origin_entity_id, dest_entity_id, search_criteria,
                                      param_ids_to_transfer, param_ids_to_receive, program_status_param_id,
                                      block_param_pos, new_id_pos):
-    logging.info(
-        f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} - START -----------------!')
-    logging.info(
-        f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} - '
-        f'FROM ENTITY {origin_entity_id} TO ENTITY {dest_entity_id} -----------------!')
     try:
         results = api.get_records_by_search_criteria_and_params(
             entity_id=origin_entity_id,
@@ -1041,17 +1036,9 @@ def transfer_records_based_on_blocks(customer_name, api, origin_entity_id, dest_
             searchCriterias=search_criteria
         )
     except Exception as e:
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name}'
-            f' - END WITH ERRORS COULD NOT GET RECORDS FROM ENTITY {origin_entity_id}  -----------------!')
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} - '
-            f'ERROR MESSAGE {e} -----------------!')
-        return False
-    if "records" not in results:
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} - END '
-            f'NO RECORDS WERE FOUND IN ORIGIN ENTITY  -----------------!')
+        logger.error(f'transfer_records_based_on_blocks | Customer: {customer_name} | FAILED to get records from entity {origin_entity_id} | Error: {e}', exc_info=True)
+        return None  # None = error occurred
+    if "records" not in results or len(results.get("records", [])) == 0:
         return False
     else:
         dest_entity_body = {
@@ -1136,51 +1123,24 @@ def transfer_records_based_on_blocks(customer_name, api, origin_entity_id, dest_
             })
         if len(origin_entity_body["records"]) > 0:
             try:
-                logging.info(
-                    f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} -'
-                    f' TRY TO UPDATE RECORDS {origin_entity_body} -----------------!')
                 api.create_or_update_multi_records(origin_entity_body)
             except Exception as e:
-                logging.info(
-                    f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} -'
-                    f' END WITH ERRORS TRYING TO UPDATE {origin_entity_body} -----------------!')
-                logging.info(
-                    f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} -'
-                    f' ERROR MESSAGE {e} -----------------!')
-                return False
+                logger.error(f'transfer_records_based_on_blocks | Customer: {customer_name} | FAILED to update origin records | Error: {e}', exc_info=True)
+                return None  # None = error occurred
             else:
                 if len(dest_entity_body["records"]) > 0:
                     try:
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} -'
-                            f' TRY TO CREATE RECORDS {dest_entity_body} -----------------!')
                         api.create_or_update_multi_records(dest_entity_body)
                     except Exception as e:
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} -'
-                            f' END WITH ERRORS TRYING TO CREATE {dest_entity_body} -----------------!')
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} -'
-                            f' ERROR MESSAGE {e} -----------------!')
-                        return False
+                        logger.error(f'transfer_records_based_on_blocks | Customer: {customer_name} | FAILED to create destination records | Error: {e}', exc_info=True)
+                        return None  # None = error occurred
                     else:
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} - END '
-                            f'-----------------!')
                         return True
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records_based_on_blocks {customer_name} - END '
-            f'-----------------!')
         return False
 
 
 def transfer_records(customer_name, api, origin_entity_id, dest_entity_id, search_criteria, param_ids_to_transfer,
                      param_ids_to_receive, program_status_param_id, new_id_pos):
-    logging.info(
-        f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} - START -----------------!')
-    logging.info(
-        f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} - '
-        f'FROM ENTITY {origin_entity_id} TO ENTITY {dest_entity_id} -----------------!')
     try:
         results = api.get_records_by_search_criteria_and_params(
             entity_id=origin_entity_id,
@@ -1188,78 +1148,81 @@ def transfer_records(customer_name, api, origin_entity_id, dest_entity_id, searc
             searchCriterias=search_criteria
         )
     except Exception as e:
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name}'
-            f' - END WITH ERRORS COULD NOT GET RECORDS FROM ENTITY {origin_entity_id}  -----------------!')
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} - '
-            f'ERROR MESSAGE {e} -----------------!')
+        logger.error(f'transfer_records | Customer: {customer_name} | FAILED to get records from entity {origin_entity_id} | Error: {e}', exc_info=True)
+        return None  # None = error occurred
+    
+    if "records" not in results or len(results.get("records", [])) == 0:
         return False
-    if "records" not in results:
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} - END '
-            f'NO RECORDS WERE FOUND IN ORIGIN ENTITY  -----------------!')
-        return False
-    else:
-        dest_entity_body = {
-            "entityId": dest_entity_id,
-            "records": []
-        }
-        origin_entity_body = {
-            "entityId": origin_entity_id,
-            "records": []
-        }
-        for record in results["records"]:
-            if "value" not in record["paramValues"][new_id_pos]:
-                origin_entity_body["records"].append({
-                    "recordId": record["recordId"],
-                    "paramValues": [{
-                        "id": program_status_param_id,
-                        "valueId": 3,
-                        "value": "נבדק - לא תקין"
-                    }]
-                })
-                continue
-            elif not record["paramValues"][new_id_pos]["value"].isnumeric():
-                origin_entity_body["records"].append({
-                    "recordId": record["recordId"],
-                    "paramValues": [{
-                        "id": program_status_param_id,
-                        "valueId": 3,
-                        "value": "נבדק - לא תקין"
-                    }]
-                })
-                continue
-            elif (int(record["paramValues"][new_id_pos]["value"]) == 0 or
-                  int(record["paramValues"][new_id_pos]["value"]) < 0):
-                origin_entity_body["records"].append({
-                    "recordId": record["recordId"],
-                    "paramValues": [{
-                        "id": program_status_param_id,
-                        "valueId": 3,
-                        "value": "נבדק - לא תקין"
-                    }]
-                })
-                continue
-            else:
-                new_record_id = int(record["paramValues"][new_id_pos]["value"])
-                dest_record = {
-                    "recordId": new_record_id,
-                    "paramValues": []
-                }
-                for loc in range(len(param_ids_to_transfer)):
-                    if "value" in (record["paramValues"][loc]) and "valueId" in (record["paramValues"][loc]):
-                        dest_record["paramValues"].append({
-                            "id": param_ids_to_receive[loc],
-                            "value": record["paramValues"][loc]["value"],
-                            "valueId": record["paramValues"][loc]["valueId"]
-                        })
-                        continue
-                    if "value" in (record["paramValues"][loc]):
-                        dest_record["paramValues"].append({
-                            "id": param_ids_to_receive[loc],
-                            "value": record["paramValues"][loc]["value"]
-                        })
+    
+    total_found = len(results["records"])
+    
+    dest_entity_body = {
+        "entityId": dest_entity_id,
+        "records": []
+    }
+    origin_entity_body = {
+        "entityId": origin_entity_id,
+        "records": []
+    }
+    
+    invalid_count = 0
+    valid_count = 0
+    
+    for record in results["records"]:
+        if "value" not in record["paramValues"][new_id_pos]:
+            invalid_count += 1
+            origin_entity_body["records"].append({
+                "recordId": record["recordId"],
+                "paramValues": [{
+                    "id": program_status_param_id,
+                    "valueId": 3,
+                    "value": "נבדק - לא תקין"
+                }]
+            })
+            continue
+        elif not record["paramValues"][new_id_pos]["value"].isnumeric():
+            invalid_count += 1
+            origin_entity_body["records"].append({
+                "recordId": record["recordId"],
+                "paramValues": [{
+                    "id": program_status_param_id,
+                    "valueId": 3,
+                    "value": "נבדק - לא תקין"
+                }]
+            })
+            continue
+        elif (int(record["paramValues"][new_id_pos]["value"]) == 0 or
+              int(record["paramValues"][new_id_pos]["value"]) < 0):
+            invalid_count += 1
+            origin_entity_body["records"].append({
+                "recordId": record["recordId"],
+                "paramValues": [{
+                    "id": program_status_param_id,
+                    "valueId": 3,
+                    "value": "נבדק - לא תקין"
+                }]
+            })
+            continue
+        else:
+            valid_count += 1
+            new_record_id = int(record["paramValues"][new_id_pos]["value"])
+            dest_record = {
+                "recordId": new_record_id,
+                "paramValues": []
+            }
+            for loc in range(len(param_ids_to_transfer)):
+                if "value" in (record["paramValues"][loc]) and "valueId" in (record["paramValues"][loc]):
+                    dest_record["paramValues"].append({
+                        "id": param_ids_to_receive[loc],
+                        "value": record["paramValues"][loc]["value"],
+                        "valueId": record["paramValues"][loc]["valueId"]
+                    })
+                    continue
+                if "value" in (record["paramValues"][loc]):
+                    dest_record["paramValues"].append({
+                        "id": param_ids_to_receive[loc],
+                        "value": record["paramValues"][loc]["value"]
+                    })
             dest_entity_body["records"].append(dest_record)
             origin_entity_body["records"].append({
                 "recordId": record["recordId"],
@@ -1270,41 +1233,23 @@ def transfer_records(customer_name, api, origin_entity_id, dest_entity_id, searc
                     }
                 ]
             })
-        if len(origin_entity_body["records"]) > 0:
-            try:
-                logging.info(
-                    f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} -'
-                    f' TRY TO UPDATE RECORDS {origin_entity_body} -----------------!')
-                api.create_or_update_multi_records(origin_entity_body)
-            except Exception as e:
-                logging.info(
-                    f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} -'
-                    f' END WITH ERRORS TRYING TO UPDATE {origin_entity_body} -----------------!')
-                logging.info(
-                    f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} -'
-                    f' ERROR MESSAGE {e} -----------------!')
-                return False
+    
+    if len(origin_entity_body["records"]) > 0:
+        try:
+            api.create_or_update_multi_records(origin_entity_body)
+        except Exception as e:
+            logger.error(f'transfer_records | Customer: {customer_name} | FAILED to update origin records | Error: {e}', exc_info=True)
+            return None  # None = error occurred
+        else:
+            if len(dest_entity_body["records"]) > 0:
+                try:
+                    api.create_or_update_multi_records(dest_entity_body)
+                except Exception as e:
+                    logger.error(f'transfer_records | Customer: {customer_name} | FAILED to create destination records | Error: {e}', exc_info=True)
+                    return None  # None = error occurred
+                else:
+                    return True
             else:
-                if len(dest_entity_body["records"]) > 0:
-                    try:
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} -'
-                            f' TRY TO CREATE RECORDS {dest_entity_body} -----------------!')
-                        api.create_or_update_multi_records(dest_entity_body)
-                    except Exception as e:
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} -'
-                            f' END WITH ERRORS TRYING TO CREATE {dest_entity_body} -----------------!')
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} -'
-                            f' ERROR MESSAGE {e} -----------------!')
-                        return False
-                    else:
-                        logging.info(
-                            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} - END '
-                            f'-----------------!')
-                        return True
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- transfer_records {customer_name} - END '
-            f'-----------------!')
-        return False
+                return True
+    
+    return False

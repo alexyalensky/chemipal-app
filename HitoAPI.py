@@ -67,8 +67,7 @@ class HitoAPI:
     def get_users(self):
         url = self.domain + '/hito-rest/api/user'
         body = {}
-        response_users = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_users.raise_for_status()
+        response_users = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         request.urlcleanup()
         response_users.close()
         return response_users.json()['users']
@@ -76,8 +75,7 @@ class HitoAPI:
     def get_user_params(self):
         url = self.domain + '/hito-rest/api/user'
         body = {}
-        response_users = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_users.raise_for_status()
+        response_users = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         request.urlcleanup()
         response_users.close()
         return response_users.json()['params']
@@ -98,8 +96,7 @@ class HitoAPI:
             "params": params,
             "records": ids
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         request.urlcleanup()
         response_entity.close()
         return response_entity.json()
@@ -111,8 +108,7 @@ class HitoAPI:
             "params": params,
             "records": []
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         request.urlcleanup()
         response_entity.close()
         return response_entity.json()
@@ -125,8 +121,7 @@ class HitoAPI:
             "fromCreateDate": date_from,
             "toCreateDate": date_to
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         request.urlcleanup()
         response_entity.close()
         return response_entity.json()
@@ -198,8 +193,7 @@ class HitoAPI:
                     }
                 ]
             }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
 
     def create_or_update_multi_records(self, body):
         url = self.domain + "/hito-rest/api/entity/records/create-or-update"
@@ -247,8 +241,7 @@ class HitoAPI:
             "entityId": entity_id,
             "searchCriterias": searchCriterias
         }
-        response_entity = requests.post(url=url, headers=self.HEADERS, json=body, verify=False)
-        response_entity.raise_for_status()
+        response_entity = self._make_request('POST', url, headers=self.HEADERS, json=body, verify=False)
         return response_entity.json()
 
     def add_update_users(self, users: list):

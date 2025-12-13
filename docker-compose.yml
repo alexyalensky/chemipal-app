@@ -1,0 +1,56 @@
+services:
+  # MySQL 8.0.23 Database
+  mysql:
+    image: mysql:8.0.23
+    container_name: hito-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: hito_master
+      TZ: Asia/Jerusalem
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --lower-case-table-names=1
+    networks:
+      - hito-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # WildFly 11 Domain Controller (configure everything via console)
+  wildfly:
+    image: jboss/wildfly:11.0.0.Final
+    container_name: hito-wildfly
+    environment:
+      JAVA_OPTS: "-Xms512m -Xmx2048m -Djava.net.preferIPv4Stack=true"
+    ports:
+      - "9991:9990"  # Management Console (mapped to 9991 to avoid conflict)
+      - "9080:8080"  # HTTP (mapped to 9080 to avoid conflict)
+      - "9113:9113"  # HTTP for ashdodport server (base 9090 + offset 23)
+      - "9135:9135"  # HTTP for hito_g1 server (base 9090 + offset 45)
+      - "9443:8443"  # HTTPS (mapped to 9443 to avoid conflict)
+    volumes:
+      - wildfly_data:/opt/jboss/wildfly/domain
+      - ./docker/wildfly/modules/system/layers/base/com/sql/mysql:/opt/jboss/wildfly/modules/system/layers/base/com/sql/mysql:ro
+    command: /opt/jboss/wildfly/bin/domain.sh -b 0.0.0.0 -bmanagement 0.0.0.0
+    networks:
+      - hito-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+    driver: local
+  wildfly_data:
+    driver: local
+
+networks:
+  hito-network:
+    driver: bridge
+
