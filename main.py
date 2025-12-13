@@ -19,38 +19,76 @@ from check_volunteer_exists import *
 from PulseemAPI import *
 import requests
 from g1_functions import create_users_from_entity_rows
+from logging_config import setup_logging, get_logger
 
 load_dotenv()
 
-# Logger configuration
-logging.basicConfig(filename="log/log.txt", level=logging.DEBUG)
+# Initialize centralized logging
+setup_logging()
+logger = get_logger(__name__)
 
-chemipal = HitoAPI(os.environ.get("CHEMIPAL_DOMAIN"), os.environ.get("CHEMIPAL_API_KEY"))
-rlz = HitoAPI(os.environ.get("RLZ_DOMAIN"), os.environ.get("RLZ_API_KEY"))
-delek = HitoAPI(os.environ.get("DELEK_DOMAIN"), os.environ.get("DELEK_API_KEY"))
-netanya = HitoAPI(os.environ.get("NETANYA_DOMAIN"), os.environ.get("NETANYA_API_KEY"))
-holon = HitoAPI(os.environ.get("HOLON_DOMAIN"), os.environ.get("HOLON_API_KEY"))
-namal = HitoAPI(os.environ.get("NAMAL_DOMAIN"), os.environ.get("NAMAL_API_KEY"))
-ashdod = HitoAPI(os.environ.get("ASHDOD_DOMAIN"), os.environ.get("ASHDOD_API_KEY"))
-g1 = HitoAPI(os.environ.get("G1_DOMAIN"), os.environ.get("G1_API_KEY"))
+# Process Configuration - Set to True to enable, False to disable
+PROCESS_CONFIG = {
+    'main_processes': False,
+    'thirty_min': False,
+    'one_hour': False,
+    'fifteen_min': False,
+    'volunteer_processes': False,
+    'delek_processes': False,
+    'namal_processes': True,
+    'ashdod_betihut': False,
+    'g1_processes': True,
+}
+
+# Initialize API connections based on process configuration
+chemipal = None
+rlz = None
+delek = None
+netanya = None
+holon = None
+ashdod = None
+namal = None
+g1 = None
+
+if PROCESS_CONFIG.get('main_processes') or PROCESS_CONFIG.get('thirty_min') or PROCESS_CONFIG.get('one_hour') or PROCESS_CONFIG.get('fifteen_min'):
+    chemipal = HitoAPI(os.environ.get("CHEMIPAL_DOMAIN"), os.environ.get("CHEMIPAL_API_KEY"))
+
+if PROCESS_CONFIG.get('volunteer_processes'):
+    rlz = HitoAPI(os.environ.get("RLZ_DOMAIN"), os.environ.get("RLZ_API_KEY"))
+    netanya = HitoAPI(os.environ.get("NETANYA_DOMAIN"), os.environ.get("NETANYA_API_KEY"))
+    holon = HitoAPI(os.environ.get("HOLON_DOMAIN"), os.environ.get("HOLON_API_KEY"))
+
+if PROCESS_CONFIG.get('delek_processes'):
+    delek = HitoAPI(os.environ.get("DELEK_DOMAIN"), os.environ.get("DELEK_API_KEY"))
+
+if PROCESS_CONFIG.get('namal_processes'):
+    namal = HitoAPI(os.environ.get("NAMAL_DOMAIN"), os.environ.get("NAMAL_API_KEY"))
+
+if PROCESS_CONFIG.get('ashdod_betihut'):
+    ashdod = HitoAPI(os.environ.get("ASHDOD_DOMAIN"), os.environ.get("ASHDOD_API_KEY"))
+
+if PROCESS_CONFIG.get('g1_processes'):
+    g1 = HitoAPI(os.environ.get("G1_DOMAIN"), os.environ.get("G1_API_KEY"))
+
+# Log enabled processes at startup
+enabled_processes = [name for name, enabled in PROCESS_CONFIG.items() if enabled]
+logger.info(f'Enabled processes: {", ".join(enabled_processes) if enabled_processes else "None"}')
 
 def g1_processes():
     while True:
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize g1_processes() five5 every 1 minute '
-            f'-----------------!')
+        logger.info('START: g1_processes | Customer: G1 | every 10 minutes')
         create_users_from_entity_rows(g1, 34, [{"paramId": 989, "operator": "EQ", "values": [2]}], [574, 575, 627, 628, 570, 629, 580, 581, 582, 583, 584, 585, 822])
-        logging.info(f'{str(datetime.today()).split(".")[0]} | !----------------- END Initialize g1_processes() five5 every 1 minute '
-                     f'-----------------!')
-        time.sleep(60)
+        logger.info('END: g1_processes | Customer: G1')
+        time.sleep(600)
 
 def ashdod_betihut():
+    customer_name = "Ashdod"
     while True:
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize ashdod_betihut() seven7 every 10 minutes '
-            f'-----------------!')
-        transfer_records(
-            customer_name="Ashdod",
+        logger.info(f'START: ashdod_betihut | Customer: {customer_name} | every 10 minutes')
+        
+        # First transfer: Entity 240 -> 119
+        result1 = transfer_records(
+            customer_name=customer_name,
             api=ashdod,
             origin_entity_id=240,
             dest_entity_id=119,
@@ -60,8 +98,9 @@ def ashdod_betihut():
             program_status_param_id=4383, new_id_pos=0
         )
 
-        transfer_records(
-            customer_name="Ashdod",
+        # Second transfer: Entity 228 -> 119
+        result2 = transfer_records(
+            customer_name=customer_name,
             api=ashdod,
             origin_entity_id=228,
             dest_entity_id=119,
@@ -70,15 +109,15 @@ def ashdod_betihut():
             param_ids_to_receive=[2184, 2185, 2186, 2190, 4297, 4296, 4146],
             program_status_param_id=4382, new_id_pos=0
         )
+        
+        logger.info(f'END: ashdod_betihut | Customer: {customer_name} | Transfer 1 (240->119): {"SUCCESS" if result1 else "NO RECORDS/FAILED"} | Transfer 2 (228->119): {"SUCCESS" if result2 else "NO RECORDS/FAILED"}')
         time.sleep(600)
 
 
 def namal_proccesses():
     while True:
-        logging.info(
-            f'{str(datetime.today()).split(".")[0]} | !----------------- START Initialize namal_proccesses() zero0 every 1 minute '
-            f'-----------------!')
-        transfer_records(
+        logger.info('START: namal_proccesses | Customer: NAMAL | every 1 minute')
+        result1 = transfer_records(
             customer_name="NAMAL", api=namal, origin_entity_id=105, dest_entity_id=62,
             search_criteria=[{"paramId": 1872, "operator": "EQ", "values": [1]}],
             param_ids_to_transfer=[1721, 1743, 1678, 1679, 1680, 1681, 1682, 1683, 1684, 1685, 1686, 1687, 1688,
@@ -91,7 +130,7 @@ def namal_proccesses():
                                   890, 891, 892, 893, 1671, 894, 895, 896, 897, 898, 900, 962, 996, 997, 998, 1093,
                                   1095, 1096, 1122, 1147, 1148, 1157, 1161, 1477, 1478, 1479, 1842],
             program_status_param_id=1872, new_id_pos=0)
-        transfer_records_based_on_blocks(
+        result2 = transfer_records_based_on_blocks(
             customer_name="NAMAL",
             api=namal,
             origin_entity_id=106,
@@ -107,6 +146,9 @@ def namal_proccesses():
             block_param_pos=4,
             new_id_pos=0
         )
+        status1 = "SUCCESS" if result1 else "NO RECORDS/FAILED"
+        status2 = "SUCCESS" if result2 else "NO RECORDS/FAILED"
+        logger.info(f'END: namal_proccesses | Customer: NAMAL | Transfer 1 (105->62): {status1} | Transfer 2 (106->102): {status2}')
         time.sleep(60)
 
 
@@ -707,32 +749,42 @@ def fifteen_min():
         time.sleep(901)
 
 
-thread_all = threading.Thread(target=main_processes)
-thread_thirty_min = threading.Thread(target=thirty_min)
-thread_one_hour = threading.Thread(target=one_hour)
-thread_fifteen_min = threading.Thread(target=fifteen_min)
-thread_volunteer_processes = threading.Thread(target=volunteer_processes)
-thread_delek_processes = threading.Thread(target=delek_processes)
-thread_namal = threading.Thread(target=namal_proccesses)
-thread_ashdod = threading.Thread(target=ashdod_betihut)
-thread_g1 = threading.Thread(target=g1_processes)
+# Create and start threads based on process configuration
+threads = {}
 
-thread_all.start()
-thread_thirty_min.start()
-thread_one_hour.start()
-thread_fifteen_min.start()
-thread_volunteer_processes.start()
-thread_delek_processes.start()
-thread_namal.start()
-thread_ashdod.start()
-thread_g1.start()
+if PROCESS_CONFIG.get('main_processes'):
+    threads['main_processes'] = threading.Thread(target=main_processes)
 
-thread_all.join()
-thread_thirty_min.join()
-thread_one_hour.join()
-thread_fifteen_min.join()
-thread_volunteer_processes.join()
-thread_delek_processes.join()
-thread_namal.join()
-thread_ashdod.join()
-thread_g1.join()
+if PROCESS_CONFIG.get('thirty_min'):
+    threads['thirty_min'] = threading.Thread(target=thirty_min)
+
+if PROCESS_CONFIG.get('one_hour'):
+    threads['one_hour'] = threading.Thread(target=one_hour)
+
+if PROCESS_CONFIG.get('fifteen_min'):
+    threads['fifteen_min'] = threading.Thread(target=fifteen_min)
+
+if PROCESS_CONFIG.get('volunteer_processes'):
+    threads['volunteer_processes'] = threading.Thread(target=volunteer_processes)
+
+if PROCESS_CONFIG.get('delek_processes'):
+    threads['delek_processes'] = threading.Thread(target=delek_processes)
+
+if PROCESS_CONFIG.get('namal_processes'):
+    threads['namal_processes'] = threading.Thread(target=namal_proccesses)
+
+if PROCESS_CONFIG.get('ashdod_betihut'):
+    threads['ashdod_betihut'] = threading.Thread(target=ashdod_betihut)
+
+if PROCESS_CONFIG.get('g1_processes'):
+    threads['g1_processes'] = threading.Thread(target=g1_processes)
+
+# Start all enabled threads
+for process_name, thread in threads.items():
+    logger.info(f'Starting process: {process_name}')
+    thread.start()
+
+# Wait for all threads to complete (they run indefinitely, so this blocks)
+for process_name, thread in threads.items():
+    logger.info(f'Joining thread: {process_name}')
+    thread.join()
