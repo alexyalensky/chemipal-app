@@ -1,6 +1,5 @@
 from datetime import datetime
 from HitoAPI import HitoAPI
-import logging
 from logging_config import setup_logging, get_logger
 
 # Initialize centralized logging
@@ -108,38 +107,83 @@ def create_users_from_entity_rows(customer_api: HitoAPI, entity_id: int, search_
     Returns:
         bool: True if new users were successfully created, False otherwise.
     """
-    logging.info(f'Checking for new users in {customer_api.domain} in entity {entity_id}...')
+    logger.info(f'Checking for new users in {customer_api.domain} in entity {entity_id}...')
     new_users_found, new_users, params = check_for_new_users(customer_api, entity_id, search_criteria, entity_params)
     if not new_users_found:
-        logging.info(f'No new users found in entity {entity_id} for {customer_api.domain}.')
+        logger.info(f'No new users found in entity {entity_id} for {customer_api.domain}.')
         return False
     else:
         new_users_body = []
         mandatory_ids = {574, 627, 628, 570}
-        users_body_to_update_status = {
-            "entityId": entity_id,
-            "records": []
-        }
-        logging.info(f'Found {len(new_users)} new users in entity {entity_id}. Validating mandatory fields...')
+        logger.info(f'Found {len(new_users)} new users in entity {entity_id}. Validating mandatory fields...')
+        # Track which users are being created and their corresponding record IDs
+        user_to_record_mapping = {}  # Maps user_id -> recordId for status update tracking
+        
         for user in new_users:
             if are_mandatory_values_valid(user["paramValues"], mandatory_ids):
-                new_users_body.append(transform_user_record(user))
-                users_body_to_update_status["records"].append({"recordId": user["recordId"], "paramValues": [{"id": 989, "valueId": 3, "value": "הוקם כמשתמש"}]})
+                transformed_user = transform_user_record(user)
+                user_id = transformed_user.get("id")
+                record_id = user.get("recordId")
+                new_users_body.append(transformed_user)
+                user_to_record_mapping[user_id] = record_id
+        
         if not new_users_body:
-            logging.info(f'No valid users found to create in entity {entity_id} for {customer_api.domain}.')
+            logger.info(f'No valid users found to create in entity {entity_id} for {customer_api.domain}.')
             return False
+        
         try:
-            logging.info(f'Creating {len(new_users_body)} new users from entity {entity_id} for {customer_api.domain}...')
+            logger.info(f'Creating {len(new_users_body)} new users from entity {entity_id} for {customer_api.domain}...')
             customer_api.add_update_users(new_users_body)
+            # If we reach here, all users were successfully created/updated
+            successfully_created_user_ids = [user_data.get("id") for user_data in new_users_body]
+            logger.info(f'Successfully created/updated {len(successfully_created_user_ids)} users: {successfully_created_user_ids}')
         except Exception as e:
-            logging.error(f'Error creating new users for {customer_api.domain}: {e}')
+            logger.error(f'Error creating new users for {customer_api.domain}: {e}', exc_info=True)
+            # Log which users failed to be created
+            failed_user_ids = [user_data.get("id", "N/A") for user_data in new_users_body]
+            logger.error(f'Failed to create/update users: {failed_user_ids}')
             return False
         else:
+            # Log detailed information about created users
+            for user_data in new_users_body:
+                user_id = user_data.get("id", "N/A")
+                param_details = []
+                for param in user_data.get("paramValues", []):
+                    param_id = param.get("id", "N/A")
+                    param_value = param.get("value", "")
+                    param_value_id = param.get("valueId", "")
+                    if param_value_id:
+                        param_details.append(f"paramId={param_id}, valueId={param_value_id}, value={param_value}")
+                    else:
+                        param_details.append(f"paramId={param_id}, value={param_value}")
+                logger.info(f'Successfully created user ID={user_id} | Params: {" | ".join(param_details)}')
+            
+            # Only update status for successfully created users
+            successfully_created_record_ids = []
+            for user_data in new_users_body:
+                user_id = user_data.get("id")
+                if user_id in user_to_record_mapping:
+                    record_id = user_to_record_mapping[user_id]
+                    if record_id is not None:
+                        successfully_created_record_ids.append(record_id)
+            
+            status_update_body = {
+                "entityId": entity_id,
+                "records": [
+                    {"recordId": record_id, "paramValues": [{"id": 989, "valueId": 3, "value": "הוקם כמשתמש"}]}
+                    for record_id in successfully_created_record_ids
+                ]
+            }
+            
             try:
-                logging.info(f'Updating user status for {len(users_body_to_update_status["records"])} users in entity {entity_id} for {customer_api.domain}...')
-                customer_api.create_or_update_multi_records(users_body_to_update_status)
+                logger.info(f'Updating user status for {len(status_update_body["records"])} successfully created users in entity {entity_id} for {customer_api.domain}...')
+                customer_api.create_or_update_multi_records(status_update_body)
             except Exception as e:
-                logging.error(f'Error updating user status for {customer_api.domain}: {e}')
+                logger.error(f'Error updating user status for {customer_api.domain}: {e}', exc_info=True)
+                # Log which users were created but status update failed
+                created_but_not_marked = [user_data.get("id", "N/A") for user_data in new_users_body]
+                logger.error(f'CRITICAL: Users created but status NOT updated (manual fix required): {created_but_not_marked}')
+                logger.error(f'CRITICAL: Record IDs that need manual status update: {successfully_created_record_ids}')
                 return False
-            logging.info(f'Successfully created new users and updated their status in entity {entity_id} for {customer_api.domain}.')
+            logger.info(f'Successfully created {len(new_users_body)} new users and updated their status in entity {entity_id} for {customer_api.domain}.')
             return True

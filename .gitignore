@@ -43,3 +43,10 @@ desktop.ini
 *.tmp
 *.temp
 
+# Local environment
+.env.local
+local_data/
+docker/mysql/init/*.sql
+!docker/mysql/init/01-create-databases.sql
+!docker/mysql/init/02-create-test-data.sql
+
